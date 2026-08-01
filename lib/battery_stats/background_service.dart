@@ -33,7 +33,6 @@ class BackgroundService {
   static Future<void> initialize() async {
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: false,
     );
 
     // Register 15-minute periodic task (Android enforces 15 min minimum)
@@ -41,9 +40,9 @@ class BackgroundService {
       'battery_logging_task',
       batteryPeriodicTask,
       frequency: const Duration(minutes: 15),
-      existingWorkPolicy: ExistingWorkPolicy.keep,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
       constraints: Constraints(
-        networkType: NetworkType.not_required,
+        networkType: NetworkType.notRequired,
         requiresBatteryNotLow: false,
         requiresCharging: false,
         requiresDeviceIdle: false,

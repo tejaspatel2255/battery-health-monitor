@@ -82,7 +82,7 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _addSampleLog,
-                        icon: const Icon(Icons.add_location_accent_rounded),
+                        icon: const Icon(Icons.add_location_alt_rounded),
                         label: const Text('Add Test Log Entry'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal,
