@@ -82,7 +82,6 @@ class MainActivity : FlutterActivity() {
                 val chargeFullDesignRaw = output.getOrNull(1)?.trim()?.toLongOrNull()
                 val cycleCountRaw = output.getOrNull(2)?.trim()?.toIntOrNull()
 
-                // OEM nodes can report mAh or uAh (microampere-hours)
                 stats["chargeFull"] = chargeFullRaw
                 stats["chargeFullDesign"] = chargeFullDesignRaw
                 stats["cycleCount"] = cycleCountRaw
@@ -99,6 +98,7 @@ class MainActivity : FlutterActivity() {
     private fun getBatteryExtraStats(): Map<String, Any?> {
         val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         val batteryStatus: Intent? = context.registerReceiver(null, intentFilter)
+        val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
 
         val stats = mutableMapOf<String, Any?>()
 
@@ -107,7 +107,8 @@ class MainActivity : FlutterActivity() {
             stats["temperature"] = if (temp != -1) temp / 10.0 else null
 
             val voltage = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
-            stats["voltage"] = if (voltage != -1) voltage / 1000.0 else null
+            val volts = if (voltage != -1) voltage / 1000.0 else null
+            stats["voltage"] = volts
 
             val tech = batteryStatus.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY)
             stats["technology"] = tech ?: "Unknown"
@@ -123,11 +124,25 @@ class MainActivity : FlutterActivity() {
                 else -> "UNKNOWN"
             }
             stats["healthFlag"] = healthString
+
+            // Feature 5: Real-time Charging Current (mA) and Wattage (W)
+            val currentNowMicroAmps = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+            val currentMa = Math.abs(currentNowMicroAmps) / 1000.0
+            stats["currentMa"] = if (currentNowMicroAmps != 0) currentMa else null
+
+            if (volts != null && currentNowMicroAmps != 0) {
+                val watts = volts * (currentMa / 1000.0)
+                stats["wattage"] = watts
+            } else {
+                stats["wattage"] = null
+            }
         } else {
             stats["temperature"] = null
             stats["voltage"] = null
             stats["technology"] = "Unknown"
             stats["healthFlag"] = "UNKNOWN"
+            stats["currentMa"] = null
+            stats["wattage"] = null
         }
 
         return stats
