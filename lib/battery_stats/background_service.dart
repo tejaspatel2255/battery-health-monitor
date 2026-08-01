@@ -3,6 +3,7 @@ import 'package:workmanager/workmanager.dart';
 import '../storage/battery_database.dart';
 import '../storage/battery_log_model.dart';
 import 'battery_service.dart';
+import 'notification_service.dart';
 
 const String batteryPeriodicTask = 'com.batteryhealth.monitor.periodicTask';
 
@@ -20,6 +21,10 @@ void callbackDispatcher() {
         batteryState: info.batteryStateLabel,
         temperature: info.temperature,
       );
+
+      if (info.temperature != null) {
+        await NotificationService.checkAndTriggerTemperatureWarning(info.temperature!);
+      }
 
       await BatteryDatabase.instance.insertLog(log);
       return Future.value(true);

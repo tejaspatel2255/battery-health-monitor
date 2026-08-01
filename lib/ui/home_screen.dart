@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../battery_stats/battery_model.dart';
 import '../battery_stats/battery_service.dart';
 import '../battery_stats/battery_wear_calculator.dart';
+import '../battery_stats/notification_service.dart';
 import '../battery_stats/root_battery_service.dart';
 import '../storage/battery_database.dart';
 import '../widgets_home/home_widget_service.dart';
@@ -54,6 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _rootInfo = rootInfo;
         _wearEstimate = estimate;
       });
+      if (info.temperature != null) {
+        NotificationService.checkAndTriggerTemperatureWarning(info.temperature!);
+      }
       HomeWidgetService.updateWidgets(
         batteryInfo: info,
         rootInfo: rootInfo,
