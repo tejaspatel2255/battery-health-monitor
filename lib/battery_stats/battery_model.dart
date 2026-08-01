@@ -7,6 +7,8 @@ class BatteryInfo {
   final double? voltage; // In Volts
   final String technology;
   final String healthFlag; // Coarse Android health flag
+  final double? currentMa; // Live charging current (mA)
+  final double? wattage; // Live power (Watts)
 
   const BatteryInfo({
     required this.batteryLevel,
@@ -15,6 +17,8 @@ class BatteryInfo {
     this.voltage,
     this.technology = 'Unknown',
     this.healthFlag = 'UNKNOWN',
+    this.currentMa,
+    this.wattage,
   });
 
   String get batteryStateLabel {

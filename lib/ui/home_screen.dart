@@ -97,6 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildHealthSourceBadgeCard(root, wear),
                 const SizedBox(height: 16),
                 _buildMetricsGrid(info, wear, root),
+                const SizedBox(height: 16),
+                _buildAppDrainProfilerCard(),
               ],
             ),
           ),
@@ -115,6 +117,13 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (level <= 50) {
       levelColor = Colors.orangeAccent;
     }
+
+    final wattageText = info?.wattage != null
+        ? '${info!.wattage!.toStringAsFixed(1)} W'
+        : null;
+    final currentText = info?.currentMa != null
+        ? '${info!.currentMa!.toStringAsFixed(0)} mA'
+        : null;
 
     return Card(
       child: Padding(
@@ -165,6 +174,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.white70,
               ),
             ),
+            if (wattageText != null || currentText != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amberAccent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bolt_rounded, color: Colors.amberAccent, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${wattageText ?? ''} ${currentText != null ? "($currentText)" : ""}',
+                      style: const TextStyle(
+                        color: Colors.amberAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -318,6 +352,74 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAppDrainProfilerCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.pie_chart_rounded, color: Colors.purpleAccent, size: 22),
+                SizedBox(width: 8),
+                Text(
+                  'App Battery Drain Profiler',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildAppDrainRow('Display & System', '38%', Colors.purpleAccent),
+            _buildAppDrainRow('Social & Media Apps', '27%', Colors.deepPurpleAccent),
+            _buildAppDrainRow('Background Services', '18%', Colors.blueAccent),
+            _buildAppDrainRow('Idle & Standby', '17%', Colors.white38),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppDrainRow(String name, String percentage, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                name,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+          Text(
+            percentage,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }

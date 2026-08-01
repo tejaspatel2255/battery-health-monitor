@@ -34,6 +34,8 @@ class BatteryService {
       voltage: (extras['voltage'] as num?)?.toDouble(),
       technology: (extras['technology'] as String?) ?? 'Unknown',
       healthFlag: (extras['healthFlag'] as String?) ?? 'UNKNOWN',
+      currentMa: (extras['currentMa'] as num?)?.toDouble(),
+      wattage: (extras['wattage'] as num?)?.toDouble(),
     );
   }
 
@@ -49,6 +51,8 @@ class BatteryService {
         voltage: (extras['voltage'] as num?)?.toDouble(),
         technology: (extras['technology'] as String?) ?? 'Unknown',
         healthFlag: (extras['healthFlag'] as String?) ?? 'UNKNOWN',
+        currentMa: (extras['currentMa'] as num?)?.toDouble(),
+        wattage: (extras['wattage'] as num?)?.toDouble(),
       );
     }
   }
