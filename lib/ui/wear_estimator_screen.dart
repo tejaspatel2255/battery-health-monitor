@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../battery_stats/battery_wear_calculator.dart';
+import '../battery_stats/root_battery_service.dart';
 import '../storage/battery_database.dart';
 import '../storage/battery_log_model.dart';
 
@@ -11,8 +12,10 @@ class WearEstimatorScreen extends StatefulWidget {
 }
 
 class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
+  final RootBatteryService _rootBatteryService = RootBatteryService();
   bool _isLoading = true;
   BatteryWearEstimate? _estimate;
+  RootBatteryInfo? _rootInfo;
 
   @override
   void initState() {
@@ -24,16 +27,18 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
     setState(() => _isLoading = true);
     final logs = await BatteryDatabase.instance.getAllLogs();
     final estimate = BatteryWearCalculator.calculate(logs);
+    final rootInfo = await _rootBatteryService.fetchRootBatteryInfo();
+
     if (mounted) {
       setState(() {
         _estimate = estimate;
+        _rootInfo = rootInfo;
         _isLoading = false;
       });
     }
   }
 
   Future<void> _addSampleLog() async {
-    // Helper to log a sample manually for testing
     final lastLogs = await BatteryDatabase.instance.getAllLogs();
     final lastLevel = lastLogs.isNotEmpty ? lastLogs.last.batteryLevel : 50;
     final nextLevel = (lastLevel + 5) % 100;
@@ -52,6 +57,7 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
   @override
   Widget build(BuildContext context) {
     final est = _estimate;
+    final root = _rootInfo;
 
     return Scaffold(
       appBar: AppBar(
@@ -74,9 +80,14 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildCyclesCard(est),
+                      if (root != null &&
+                          root.isRootAvailable &&
+                          root.isRootGranted)
+                        _buildMeasuredRootCard(root)
+                      else
+                        _buildEstimatedNoRootCard(est),
                       const SizedBox(height: 16),
-                      _buildStatsRow(est),
+                      _buildStatsRow(est, root),
                       const SizedBox(height: 16),
                       _buildDisclaimerCard(),
                       const SizedBox(height: 16),
@@ -98,7 +109,51 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
     );
   }
 
-  Widget _buildCyclesCard(BatteryWearEstimate? est) {
+  Widget _buildMeasuredRootCard(RootBatteryInfo root) {
+    final measuredHealth = root.measuredHealthPercentage;
+
+    return Card(
+      color: const Color(0xFF1C2834),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.verified_rounded, color: Colors.greenAccent),
+                SizedBox(width: 8),
+                Text(
+                  'Measured Health (Root Sysfs)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.greenAccent,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              measuredHealth != null ? '$measuredHealth%' : 'N/A',
+              style: const TextStyle(
+                fontSize: 44,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Full: ${root.chargeFull ?? '?'} / Design: ${root.chargeFullDesign ?? '?'}',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEstimatedNoRootCard(BatteryWearEstimate? est) {
     final cycles = est?.estimatedCycles ?? 0.0;
     final health = est?.estimatedHealthPercentage;
 
@@ -107,12 +162,22 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            const Icon(
-              Icons.autorenew_rounded,
-              size: 48,
-              color: Colors.tealAccent,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.auto_awesome_rounded, color: Colors.tealAccent),
+                SizedBox(width: 8),
+                Text(
+                  'Estimated Health (No Root)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.tealAccent,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Text(
               '$cycles',
               style: const TextStyle(
@@ -131,7 +196,7 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
             if (health != null) ...[
               const Divider(height: 32, color: Colors.white10),
               Text(
-                'Estimated Capacity Health: $health%',
+                'Estimated Capacity Retention: $health%',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -145,7 +210,7 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
     );
   }
 
-  Widget _buildStatsRow(BatteryWearEstimate? est) {
+  Widget _buildStatsRow(BatteryWearEstimate? est, RootBatteryInfo? root) {
     return Row(
       children: [
         Expanded(
@@ -158,9 +223,11 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatTile(
-            title: 'Logs Recorded',
-            value: '${est?.totalLogsCount ?? 0}',
-            icon: Icons.list_alt_rounded,
+            title: 'Root Hardware Cycles',
+            value: (root != null && root.cycleCount != null)
+                ? '${root.cycleCount}'
+                : 'N/A (No Root)',
+            icon: Icons.developer_board_rounded,
           ),
         ),
       ],
@@ -188,7 +255,7 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
             Text(
               value,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -214,7 +281,7 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Text(
-                    'Estimation Disclaimer',
+                    'Precision Paths Comparison',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -223,7 +290,7 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Non-root battery wear estimation relies on cumulative background charge delta integration. Estimated wear % requires ~2-3 weeks of continuous data collection to stabilize accurately.',
+                    '• Measured Health (Root): Directly reads charge_full and charge_full_design sysfs hardware registers via Superuser.\n• Estimated Health (No Root): Calculates background delta integration, requiring ~2-3 weeks of data collection to stabilize.',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 12,

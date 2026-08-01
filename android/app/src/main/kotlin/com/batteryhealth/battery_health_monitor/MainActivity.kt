@@ -7,13 +7,16 @@ import android.os.BatteryManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.batteryhealth.monitor/battery_extra"
+    private val EXTRA_CHANNEL = "com.batteryhealth.monitor/battery_extra"
+    private val ROOT_CHANNEL = "com.batteryhealth.monitor/root_battery"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, EXTRA_CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "getBatteryExtraStats") {
                 val stats = getBatteryExtraStats()
                 result.success(stats)
@@ -21,6 +24,76 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ROOT_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "checkRootAvailability" -> {
+                    result.success(isRootAvailable())
+                }
+                "getRootBatteryStats" -> {
+                    val stats = getRootBatteryStats()
+                    result.success(stats)
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+    }
+
+    private fun isRootAvailable(): Boolean {
+        val paths = arrayOf(
+            "/system/app/Superuser.apk",
+            "/sbin/su",
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/data/local/xbin/su",
+            "/data/local/bin/su",
+            "/system/sd/xbin/su",
+            "/system/bin/failsafe/su",
+            "/data/local/su"
+        )
+        for (path in paths) {
+            if (File(path).exists()) return true
+        }
+        return false
+    }
+
+    private fun getRootBatteryStats(): Map<String, Any?> {
+        val stats = mutableMapOf<String, Any?>()
+
+        if (!isRootAvailable()) {
+            stats["isRootAvailable"] = false
+            stats["isRootGranted"] = false
+            return stats
+        }
+
+        stats["isRootAvailable"] = true
+
+        try {
+            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "cat /sys/class/power_supply/battery/charge_full /sys/class/power_supply/battery/charge_full_design /sys/class/power_supply/battery/cycle_count"))
+            val exitCode = process.waitFor()
+
+            if (exitCode == 0) {
+                stats["isRootGranted"] = true
+                val output = process.inputStream.bufferedReader().readLines()
+
+                val chargeFullRaw = output.getOrNull(0)?.trim()?.toLongOrNull()
+                val chargeFullDesignRaw = output.getOrNull(1)?.trim()?.toLongOrNull()
+                val cycleCountRaw = output.getOrNull(2)?.trim()?.toIntOrNull()
+
+                // OEM nodes can report mAh or uAh (microampere-hours)
+                stats["chargeFull"] = chargeFullRaw
+                stats["chargeFullDesign"] = chargeFullDesignRaw
+                stats["cycleCount"] = cycleCountRaw
+            } else {
+                stats["isRootGranted"] = false
+            }
+        } catch (e: Exception) {
+            stats["isRootGranted"] = false
+        }
+
+        return stats
     }
 
     private fun getBatteryExtraStats(): Map<String, Any?> {
@@ -30,19 +103,15 @@ class MainActivity : FlutterActivity() {
         val stats = mutableMapOf<String, Any?>()
 
         if (batteryStatus != null) {
-            // Temperature is in tenths of a degree Celsius (e.g. 365 = 36.5 C)
             val temp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
             stats["temperature"] = if (temp != -1) temp / 10.0 else null
 
-            // Voltage in millivolts (e.g. 4120 mV = 4.12 V)
             val voltage = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
             stats["voltage"] = if (voltage != -1) voltage / 1000.0 else null
 
-            // Technology (e.g. Li-ion)
             val tech = batteryStatus.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY)
             stats["technology"] = tech ?: "Unknown"
 
-            // Coarse system health flag
             val health = batteryStatus.getIntExtra(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN)
             val healthString = when (health) {
                 BatteryManager.BATTERY_HEALTH_GOOD -> "GOOD"
