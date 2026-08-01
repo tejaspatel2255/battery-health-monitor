@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.intent.action.BOOT_COMPLETED" />
+
     <application
         android:label="Battery Health Monitor"
         android:name="${applicationName}"
@@ -29,6 +32,7 @@
             android:label="Battery Small (1x1)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -42,6 +46,7 @@
             android:label="Battery Medium (2x1)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -55,6 +60,7 @@
             android:label="Battery Large (4x2)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -68,6 +74,7 @@
             android:label="Battery Adaptive (Resizable)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

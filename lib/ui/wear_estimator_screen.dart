@@ -91,6 +91,8 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
                       const SizedBox(height: 16),
                       _buildDisclaimerCard(),
                       const SizedBox(height: 16),
+                      _buildBatteryOptimizationGuideCard(),
+                      const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _addSampleLog,
                         icon: const Icon(Icons.add_location_alt_rounded),
@@ -298,6 +300,42 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  Widget _buildBatteryOptimizationGuideCard() {
+    return Card(
+      color: const Color(0xFF1E1E28),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Row(
+              children: [
+                Icon(Icons.battery_saver_rounded,
+                    color: Colors.orangeAccent, size: 22),
+                SizedBox(width: 8),
+                Text(
+                  'OEM Battery Saver Notice',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.orangeAccent,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              'On devices with aggressive background restrictions (Samsung, Xiaomi, OnePlus), ensure Battery Health Monitor is set to "Unrestricted" in System Settings > Apps > Battery Optimization to prevent sparse background logs and widget delays.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                height: 1.4,
               ),
             ),
           ],
