@@ -306,6 +306,8 @@ class _WearEstimatorScreenState extends State<WearEstimatorScreen> {
         ),
       ),
     );
+  }
+
   Widget _buildBatteryOptimizationGuideCard() {
     return Card(
       color: const Color(0xFF1E1E28),

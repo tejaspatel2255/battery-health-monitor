@@ -1,5 +1,6 @@
 import 'package:battery_health_monitor/battery_stats/battery_model.dart';
 import 'package:battery_health_monitor/battery_stats/root_battery_service.dart';
+import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
