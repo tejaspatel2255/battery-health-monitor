@@ -193,7 +193,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: recentLogs.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final log = recentLogs[index];
         final timeStr =
