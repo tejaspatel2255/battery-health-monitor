@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'battery_stats/background_service.dart';
+import 'ui/history_screen.dart';
 import 'ui/home_screen.dart';
 import 'ui/theme.dart';
 import 'ui/wear_estimator_screen.dart';
@@ -36,6 +37,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    HistoryScreen(),
     WearEstimatorScreen(),
   ];
 
@@ -52,8 +54,12 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.battery_charging_full_rounded),
-            label: 'Live Stats',
+            icon: Icon(Icons.dashboard_rounded),
+            label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.show_chart_rounded),
+            label: 'History',
           ),
           NavigationDestination(
             icon: Icon(Icons.insights_rounded),

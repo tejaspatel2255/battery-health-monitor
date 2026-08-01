@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../battery_stats/battery_model.dart';
 import '../battery_stats/battery_service.dart';
+import '../battery_stats/battery_wear_calculator.dart';
+import '../battery_stats/root_battery_service.dart';
+import '../storage/battery_database.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,15 +15,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final BatteryService _batteryService = BatteryService();
+  final RootBatteryService _rootBatteryService = RootBatteryService();
+
   BatteryInfo? _batteryInfo;
+  RootBatteryInfo? _rootInfo;
+  BatteryWearEstimate? _wearEstimate;
   StreamSubscription<BatteryInfo>? _subscription;
   Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialInfo();
-    // Listen to state changes stream from battery_plus
+    _loadDashboardData();
+
     _subscription = _batteryService.batteryInfoStream.listen((info) {
       if (mounted) {
         setState(() {
@@ -29,17 +36,22 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    // Periodic poll every 5 seconds to keep temperature/voltage telemetry fresh
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _loadInitialInfo();
+      _loadDashboardData();
     });
   }
 
-  Future<void> _loadInitialInfo() async {
+  Future<void> _loadDashboardData() async {
     final info = await _batteryService.fetchCurrentBatteryInfo();
+    final rootInfo = await _rootBatteryService.fetchRootBatteryInfo();
+    final logs = await BatteryDatabase.instance.getAllLogs();
+    final estimate = BatteryWearCalculator.calculate(logs);
+
     if (mounted) {
       setState(() {
         _batteryInfo = info;
+        _rootInfo = rootInfo;
+        _wearEstimate = estimate;
       });
     }
   }
@@ -54,6 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final info = _batteryInfo;
+    final root = _rootInfo;
+    final wear = _wearEstimate;
 
     return Scaffold(
       appBar: AppBar(
@@ -61,18 +75,18 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadInitialInfo,
+          onRefresh: _loadDashboardData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildMainStatusCard(info),
+                _buildGaugeCard(info),
                 const SizedBox(height: 16),
-                _buildMetricsGrid(info),
+                _buildHealthSourceBadgeCard(root, wear),
                 const SizedBox(height: 16),
-                _buildHealthFlagCard(info),
+                _buildMetricsGrid(info, wear, root),
               ],
             ),
           ),
@@ -81,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMainStatusCard(BatteryInfo? info) {
+  Widget _buildGaugeCard(BatteryInfo? info) {
     final level = info?.batteryLevel ?? 0;
     final stateLabel = info?.batteryStateLabel ?? 'Loading...';
 
@@ -101,22 +115,34 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 120,
-                  height: 120,
+                  width: 130,
+                  height: 130,
                   child: CircularProgressIndicator(
                     value: level / 100.0,
-                    strokeWidth: 10,
+                    strokeWidth: 12,
                     color: levelColor,
                     backgroundColor: Colors.white10,
                   ),
                 ),
-                Text(
-                  '$level%',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: levelColor,
-                  ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$level%',
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: levelColor,
+                      ),
+                    ),
+                    Text(
+                      info?.technology ?? '',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white38,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -135,14 +161,87 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMetricsGrid(BatteryInfo? info) {
+  Widget _buildHealthSourceBadgeCard(
+      RootBatteryInfo? root, BatteryWearEstimate? wear) {
+    final isRootActive =
+        root != null && root.isRootAvailable && root.isRootGranted;
+
+    final badgeLabel =
+        isRootActive ? 'Health Source: Measured (Root)' : 'Health Source: Estimated (No Root)';
+    final badgeColor = isRootActive ? Colors.greenAccent : Colors.tealAccent;
+    final healthVal = isRootActive
+        ? (root.measuredHealthPercentage != null
+            ? '${root.measuredHealthPercentage}%'
+            : 'N/A')
+        : (wear?.estimatedHealthPercentage != null
+            ? '${wear!.estimatedHealthPercentage}%'
+            : 'Calculated in ~2-3 wks');
+
+    return Card(
+      color: const Color(0xFF161F28),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(
+              isRootActive
+                  ? Icons.verified_user_rounded
+                  : Icons.auto_awesome_rounded,
+              color: badgeColor,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      badgeLabel,
+                      style: TextStyle(
+                        color: badgeColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Health: $healthVal',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricsGrid(
+      BatteryInfo? info, BatteryWearEstimate? wear, RootBatteryInfo? root) {
+    final cyclesDisplay = (root != null && root.cycleCount != null)
+        ? '${root.cycleCount} (HW)'
+        : '${wear?.estimatedCycles ?? 0.0} (Est)';
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.35,
       children: [
         _buildMetricTile(
           icon: Icons.thermostat_rounded,
@@ -161,16 +260,16 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.amberAccent,
         ),
         _buildMetricTile(
-          icon: Icons.memory_rounded,
-          label: 'Technology',
-          value: info?.technology ?? 'N/A',
-          color: Colors.lightBlueAccent,
+          icon: Icons.autorenew_rounded,
+          label: 'Cycle Count',
+          value: cyclesDisplay,
+          color: Colors.tealAccent,
         ),
         _buildMetricTile(
-          icon: Icons.sync_rounded,
-          label: 'Live Stream',
-          value: 'Active',
-          color: Colors.greenAccent,
+          icon: Icons.calendar_today_rounded,
+          label: 'Days Tracked',
+          value: '${wear?.daysOfData ?? 0.0} days',
+          color: Colors.lightBlueAccent,
         ),
       ],
     );
@@ -184,12 +283,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(14.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 24),
+            Icon(icon, color: color, size: 22),
             const SizedBox(height: 8),
             Text(
               label,
@@ -202,65 +301,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               value,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHealthFlagCard(BatteryInfo? info) {
-    final healthFlag = info?.healthFlag ?? 'UNKNOWN';
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.health_and_safety_rounded,
-                    color: Colors.tealAccent),
-                const SizedBox(width: 8),
-                const Text(
-                  'System health flag',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.teal.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.tealAccent),
-                  ),
-                  child: Text(
-                    healthFlag,
-                    style: const TextStyle(
-                      color: Colors.tealAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Note: This status is reported directly by the Android OS sticky broadcast. It is usually "GOOD" unless hardware overheating/dead status occurs, and is not a precise indicator of battery capacity wear.',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-                height: 1.4,
               ),
             ),
           ],
