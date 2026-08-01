@@ -5,6 +5,7 @@ import '../battery_stats/battery_service.dart';
 import '../battery_stats/battery_wear_calculator.dart';
 import '../battery_stats/root_battery_service.dart';
 import '../storage/battery_database.dart';
+import '../widgets_home/home_widget_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -53,6 +54,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _rootInfo = rootInfo;
         _wearEstimate = estimate;
       });
+      HomeWidgetService.updateWidgets(
+        batteryInfo: info,
+        rootInfo: rootInfo,
+        wearEstimate: estimate,
+      );
     }
   }
 
