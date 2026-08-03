@@ -61,7 +61,25 @@ class BackgroundService {
       'battery_logging_task',
       batteryPeriodicTask,
       frequency: const Duration(minutes: 15),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+      constraints: Constraints(
+        networkType: NetworkType.notRequired,
+        requiresBatteryNotLow: false,
+        requiresCharging: false,
+        requiresDeviceIdle: false,
+        requiresStorageNotLow: false,
+      ),
+    );
+  }
+
+  static Future<void> reRegisterPeriodicTask({
+    ExistingPeriodicWorkPolicy policy = ExistingPeriodicWorkPolicy.replace,
+  }) async {
+    await Workmanager().registerPeriodicTask(
+      'battery_logging_task',
+      batteryPeriodicTask,
+      frequency: const Duration(minutes: 15),
+      existingWorkPolicy: policy,
       constraints: Constraints(
         networkType: NetworkType.notRequired,
         requiresBatteryNotLow: false,

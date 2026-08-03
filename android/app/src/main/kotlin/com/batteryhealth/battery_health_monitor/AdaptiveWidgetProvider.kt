@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Bundle
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 
 class AdaptiveWidgetProvider : HomeWidgetProvider() {
@@ -29,7 +30,7 @@ class AdaptiveWidgetProvider : HomeWidgetProvider() {
         appWidgetId: Int,
         newOptions: Bundle
     ) {
-        val widgetData = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
+        val widgetData = HomeWidgetPlugin.getData(context)
         updateAdaptiveWidget(context, appWidgetManager, appWidgetId, newOptions, widgetData)
     }
 
