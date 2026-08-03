@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:home_widget/home_widget.dart';
 
 class RootBatteryInfo {
   final bool isRootAvailable;
@@ -29,6 +30,7 @@ class RootBatteryInfo {
 class RootBatteryService {
   static const MethodChannel _channel =
       MethodChannel('com.batteryhealth.monitor/root_battery');
+  static const String _rootGrantedKey = 'is_root_granted';
 
   Future<bool> isRootAvailable() async {
     try {
@@ -40,15 +42,30 @@ class RootBatteryService {
     }
   }
 
+  Future<bool> isRootGrantedCached() async {
+    try {
+      final bool? granted =
+          await HomeWidget.getWidgetData<bool>(_rootGrantedKey);
+      return granted ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<RootBatteryInfo> fetchRootBatteryInfo() async {
     try {
       final Map<dynamic, dynamic>? result =
           await _channel.invokeMethod('getRootBatteryStats');
       if (result != null) {
         final map = Map<String, dynamic>.from(result);
+        final isAvailable = (map['isRootAvailable'] as bool?) ?? false;
+        final isGranted = (map['isRootGranted'] as bool?) ?? false;
+
+        await HomeWidget.saveWidgetData<bool>(_rootGrantedKey, isGranted);
+
         return RootBatteryInfo(
-          isRootAvailable: (map['isRootAvailable'] as bool?) ?? false,
-          isRootGranted: (map['isRootGranted'] as bool?) ?? false,
+          isRootAvailable: isAvailable,
+          isRootGranted: isGranted,
           chargeFull: (map['chargeFull'] as num?)?.toInt(),
           chargeFullDesign: (map['chargeFullDesign'] as num?)?.toInt(),
           cycleCount: (map['cycleCount'] as num?)?.toInt(),
@@ -57,6 +74,8 @@ class RootBatteryService {
     } on PlatformException catch (_) {
       // Platform error
     }
+
+    await HomeWidget.saveWidgetData<bool>(_rootGrantedKey, false);
 
     return const RootBatteryInfo(
       isRootAvailable: false,

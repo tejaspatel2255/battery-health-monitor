@@ -31,9 +31,16 @@ void callbackDispatcher() {
 
       await BatteryDatabase.instance.insertLog(log);
 
-      // Fetch logs and root status to refresh widgets on background timer
+      // Check cached root status before invoking root shell from background isolate
       final rootBatteryService = RootBatteryService();
-      final rootInfo = await rootBatteryService.fetchRootBatteryInfo();
+      final isRootGranted = await rootBatteryService.isRootGrantedCached();
+      final rootInfo = isRootGranted
+          ? await rootBatteryService.fetchRootBatteryInfo()
+          : const RootBatteryInfo(
+              isRootAvailable: false,
+              isRootGranted: false,
+            );
+
       final logs = await BatteryDatabase.instance.getAllLogs();
       final estimate = BatteryWearCalculator.calculate(logs);
 
