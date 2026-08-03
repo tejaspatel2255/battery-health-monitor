@@ -5,6 +5,8 @@ import '../battery_stats/root_battery_service.dart';
 
 class HomeWidgetService {
   static const String _smallProvider = 'SmallWidgetProvider';
+  static const String _batteryOnlyProvider = 'BatteryOnlyWidgetProvider';
+  static const String _tempOnlyProvider = 'TempOnlyWidgetProvider';
   static const String _mediumProvider = 'MediumWidgetProvider';
   static const String _largeProvider = 'LargeWidgetProvider';
   static const String _adaptiveProvider = 'AdaptiveWidgetProvider';
@@ -29,8 +31,10 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData<String>('battery_badge', badgeText);
     await HomeWidget.saveWidgetData<String>('battery_cycles', '${wearEstimate.estimatedCycles}');
 
-    // Broadcast trigger update to all 4 native Kotlin AppWidgetProviders
+    // Broadcast trigger update to all 6 native Kotlin AppWidgetProviders
     await HomeWidget.updateWidget(name: _smallProvider);
+    await HomeWidget.updateWidget(name: _batteryOnlyProvider);
+    await HomeWidget.updateWidget(name: _tempOnlyProvider);
     await HomeWidget.updateWidget(name: _mediumProvider);
     await HomeWidget.updateWidget(name: _largeProvider);
     await HomeWidget.updateWidget(name: _adaptiveProvider);
