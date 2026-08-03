@@ -22,6 +22,7 @@ class BatteryDatabase {
       path,
       version: 1,
       onCreate: _createDB,
+      onOpen: _onOpenDB,
     );
   }
 
@@ -35,6 +36,15 @@ class BatteryDatabase {
         temperature REAL
       )
     ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_battery_logs_timestamp ON battery_logs(timestamp)',
+    );
+  }
+
+  Future<void> _onOpenDB(Database db) async {
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_battery_logs_timestamp ON battery_logs(timestamp)',
+    );
   }
 
   Future<int> insertLog(BatteryLog log) async {

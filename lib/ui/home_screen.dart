@@ -23,13 +23,15 @@ class _HomeScreenState extends State<HomeScreen> {
   RootBatteryInfo? _rootInfo;
   BatteryWearEstimate? _wearEstimate;
   StreamSubscription<BatteryInfo>? _subscription;
-  Timer? _pollingTimer;
+  Timer? _fastPollingTimer;
+  Timer? _slowPollingTimer;
 
   @override
   void initState() {
     super.initState();
     NotificationService.initialize();
-    _loadDashboardData();
+    _loadFastBatteryData();
+    _loadSlowWearData();
 
     _subscription = _batteryService.batteryInfoStream.listen((info) {
       if (mounted) {
@@ -39,38 +41,60 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _loadDashboardData();
+    // Fast timer: 5s polling for live level, temp, voltage, wattage
+    _fastPollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _loadFastBatteryData();
+    });
+
+    // Slow timer: 60s polling for heavy database query & wear estimate calculation
+    _slowPollingTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      _loadSlowWearData();
     });
   }
 
-  Future<void> _loadDashboardData() async {
+  Future<void> _loadFastBatteryData() async {
     final info = await _batteryService.fetchCurrentBatteryInfo();
     final rootInfo = await _rootBatteryService.fetchRootBatteryInfo();
-    final logs = await BatteryDatabase.instance.getAllLogs();
-    final estimate = BatteryWearCalculator.calculate(logs);
 
     if (mounted) {
       setState(() {
         _batteryInfo = info;
         _rootInfo = rootInfo;
-        _wearEstimate = estimate;
       });
       if (info.temperature != null) {
         NotificationService.checkAndTriggerTemperatureWarning(info.temperature!);
       }
-      HomeWidgetService.updateWidgets(
-        batteryInfo: info,
-        rootInfo: rootInfo,
-        wearEstimate: estimate,
-      );
     }
+  }
+
+  Future<void> _loadSlowWearData() async {
+    final logs = await BatteryDatabase.instance.getAllLogs();
+    final estimate = BatteryWearCalculator.calculate(logs);
+
+    if (mounted) {
+      setState(() {
+        _wearEstimate = estimate;
+      });
+      if (_batteryInfo != null && _rootInfo != null) {
+        HomeWidgetService.updateWidgets(
+          batteryInfo: _batteryInfo!,
+          rootInfo: _rootInfo!,
+          wearEstimate: estimate,
+        );
+      }
+    }
+  }
+
+  Future<void> _refreshAllData() async {
+    await _loadFastBatteryData();
+    await _loadSlowWearData();
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
-    _pollingTimer?.cancel();
+    _fastPollingTimer?.cancel();
+    _slowPollingTimer?.cancel();
     super.dispose();
   }
 
@@ -86,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadDashboardData,
+          onRefresh: _refreshAllData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16.0),

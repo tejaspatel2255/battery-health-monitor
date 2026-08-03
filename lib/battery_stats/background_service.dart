@@ -105,4 +105,19 @@ class BackgroundService {
       ),
     );
   }
+
+  static Future<void> triggerOneOffTestTask() async {
+    await Workmanager().registerOneOffTask(
+      'test_background_task_${DateTime.now().millisecondsSinceEpoch}',
+      batteryPeriodicTask,
+      initialDelay: Duration.zero,
+      constraints: Constraints(
+        networkType: NetworkType.notRequired,
+        requiresBatteryNotLow: false,
+        requiresCharging: false,
+        requiresDeviceIdle: false,
+        requiresStorageNotLow: false,
+      ),
+    );
+  }
 }
