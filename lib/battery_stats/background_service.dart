@@ -2,8 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 import '../storage/battery_database.dart';
 import '../storage/battery_log_model.dart';
+import '../widgets_home/home_widget_service.dart';
 import 'battery_service.dart';
+import 'battery_wear_calculator.dart';
 import 'notification_service.dart';
+import 'root_battery_service.dart';
 
 const String batteryPeriodicTask = 'com.batteryhealth.monitor.periodicTask';
 
@@ -27,6 +30,19 @@ void callbackDispatcher() {
       }
 
       await BatteryDatabase.instance.insertLog(log);
+
+      // Fetch logs and root status to refresh widgets on background timer
+      final rootBatteryService = RootBatteryService();
+      final rootInfo = await rootBatteryService.fetchRootBatteryInfo();
+      final logs = await BatteryDatabase.instance.getAllLogs();
+      final estimate = BatteryWearCalculator.calculate(logs);
+
+      await HomeWidgetService.updateWidgets(
+        batteryInfo: info,
+        rootInfo: rootInfo,
+        wearEstimate: estimate,
+      );
+
       return Future.value(true);
     } catch (e) {
       return Future.value(false);
@@ -45,7 +61,7 @@ class BackgroundService {
       'battery_logging_task',
       batteryPeriodicTask,
       frequency: const Duration(minutes: 15),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
       constraints: Constraints(
         networkType: NetworkType.notRequired,
         requiresBatteryNotLow: false,

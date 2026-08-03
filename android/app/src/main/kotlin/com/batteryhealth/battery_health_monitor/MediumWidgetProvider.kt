@@ -2,6 +2,9 @@ package com.batteryhealth.battery_health_monitor
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetProvider
 
@@ -14,13 +17,41 @@ class MediumWidgetProvider : HomeWidgetProvider() {
     ) {
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_medium_2x1)
-            val level = widgetData.getInt("battery_level", 0)
-            val status = widgetData.getString("battery_status", "Unknown") ?: "Unknown"
-            val temp = widgetData.getString("battery_temp", "-- °C") ?: "-- °C"
+            
+            var level = widgetData.getInt("battery_level", -1)
+            var status = widgetData.getString("battery_status", null)
+            var temp = widgetData.getString("battery_temp", null)
 
-            views.setTextViewText(R.id.tv_medium_percentage, "$level%")
-            views.setTextViewText(R.id.tv_medium_status, status)
-            views.setTextViewText(R.id.tv_medium_temp, "Temp: $temp")
+            // Direct system fallback if shared preferences data is empty
+            if (level == -1 || status == null || temp == null || temp == "-- °C") {
+                val batteryStatus: Intent? = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                if (batteryStatus != null) {
+                    val rawLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                    val scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+                    if (rawLevel != -1 && scale != -1) {
+                        level = (rawLevel * 100 / scale.toFloat()).toInt()
+                    }
+                    val statusInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                    status = when (statusInt) {
+                        BatteryManager.BATTERY_STATUS_CHARGING -> "Charging"
+                        BatteryManager.BATTERY_STATUS_DISCHARGING -> "Discharging"
+                        BatteryManager.BATTERY_STATUS_FULL -> "Full"
+                        else -> "Discharging"
+                    }
+                    val rawTemp = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
+                    if (rawTemp != -1) {
+                        temp = "${rawTemp / 10.0} °C"
+                    }
+                }
+            }
+
+            val displayLevel = if (level != -1) "$level%" else "--%"
+            val displayStatus = status ?: "Discharging"
+            val displayTemp = if (temp != null && temp != "-- °C") temp else "-- °C"
+
+            views.setTextViewText(R.id.tv_medium_percentage, displayLevel)
+            views.setTextViewText(R.id.tv_medium_status, displayStatus)
+            views.setTextViewText(R.id.tv_medium_temp, "Temp: $displayTemp")
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
