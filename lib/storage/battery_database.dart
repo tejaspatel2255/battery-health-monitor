@@ -52,6 +52,30 @@ class BatteryDatabase {
     return await db.insert('battery_logs', log.toMap());
   }
 
+  /// DEV-ONLY: Seed database with fake historical log entries for performance testing.
+  /// REMOVE OR GUARD BEFORE PRODUCTION RELEASE.
+  Future<void> seedBulkFakeLogs({int count = 3000}) async {
+    final db = await instance.database;
+    final batch = db.batch();
+    final now = DateTime.now();
+
+    for (int i = count; i >= 0; i--) {
+      final timestamp = now.subtract(Duration(minutes: 15 * i));
+      final level = (i % 100);
+      final state = (i % 2 == 0) ? 'Charging' : 'Discharging';
+      final temp = 30.0 + (i % 12);
+
+      batch.insert('battery_logs', {
+        'timestamp': timestamp.millisecondsSinceEpoch,
+        'batteryLevel': level,
+        'batteryState': state,
+        'temperature': temp,
+      });
+    }
+
+    await batch.commit(noResult: true);
+  }
+
   Future<List<BatteryLog>> getAllLogs() async {
     final db = await instance.database;
     final result = await db.query('battery_logs', orderBy: 'timestamp ASC');
