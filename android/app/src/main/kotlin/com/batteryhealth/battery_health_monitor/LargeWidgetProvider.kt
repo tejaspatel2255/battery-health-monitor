@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
+import android.util.Log
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetProvider
 
@@ -52,7 +53,9 @@ class LargeWidgetProvider : HomeWidgetProvider() {
                                 temp = "${rawTemp / 10.0} °C"
                             }
                         }
-                    } catch (_: Throwable) {}
+                    } catch (e: Throwable) {
+                        Log.e("LargeWidgetProvider", "Error reading battery intent broadcast", e)
+                    }
                 }
 
                 val displayLevel = if (level != -1) "$level%" else "--%"
@@ -65,7 +68,9 @@ class LargeWidgetProvider : HomeWidgetProvider() {
                 views.setTextViewText(R.id.tv_large_badge, badge)
                 views.setTextViewText(R.id.tv_large_cycles, cycles)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
-            } catch (_: Throwable) {}
+            } catch (e: Throwable) {
+                Log.e("LargeWidgetProvider", "Error updating LargeWidgetProvider", e)
+            }
         }
     }
 }

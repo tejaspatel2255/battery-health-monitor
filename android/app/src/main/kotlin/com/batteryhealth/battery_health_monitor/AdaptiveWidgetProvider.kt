@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
@@ -23,7 +24,9 @@ class AdaptiveWidgetProvider : HomeWidgetProvider() {
             try {
                 val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
                 updateAdaptiveWidget(context, appWidgetManager, appWidgetId, options, widgetData)
-            } catch (_: Throwable) {}
+            } catch (e: Throwable) {
+                Log.e("AdaptiveWidgetProvider", "Error in onUpdate for widget $appWidgetId", e)
+            }
         }
     }
 
@@ -36,7 +39,9 @@ class AdaptiveWidgetProvider : HomeWidgetProvider() {
         try {
             val widgetData = HomeWidgetPlugin.getData(context)
             updateAdaptiveWidget(context, appWidgetManager, appWidgetId, newOptions, widgetData)
-        } catch (_: Throwable) {}
+        } catch (e: Throwable) {
+            Log.e("AdaptiveWidgetProvider", "Error in onAppWidgetOptionsChanged for widget $appWidgetId", e)
+        }
     }
 
     private fun updateAdaptiveWidget(
@@ -82,7 +87,9 @@ class AdaptiveWidgetProvider : HomeWidgetProvider() {
                             temp = "${rawTemp / 10.0} °C"
                         }
                     }
-                } catch (_: Throwable) {}
+                } catch (e: Throwable) {
+                    Log.e("AdaptiveWidgetProvider", "Error reading battery intent broadcast", e)
+                }
             }
 
             val displayLevel = if (level != -1) "$level%" else "--%"
@@ -110,6 +117,8 @@ class AdaptiveWidgetProvider : HomeWidgetProvider() {
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
-        } catch (_: Throwable) {}
+        } catch (e: Throwable) {
+            Log.e("AdaptiveWidgetProvider", "Error updating AdaptiveWidgetProvider", e)
+        }
     }
 }

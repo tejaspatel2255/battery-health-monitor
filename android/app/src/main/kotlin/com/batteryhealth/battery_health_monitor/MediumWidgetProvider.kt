@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
+import android.util.Log
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetProvider
 
@@ -19,7 +20,7 @@ class MediumWidgetProvider : HomeWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             try {
                 val views = RemoteViews(context.packageName, R.layout.widget_medium_2x1)
-                
+
                 var level = widgetData.getInt("battery_level", -1)
                 var status = widgetData.getString("battery_status", null)
                 var temp = widgetData.getString("battery_temp", null)
@@ -50,7 +51,9 @@ class MediumWidgetProvider : HomeWidgetProvider() {
                                 temp = "${rawTemp / 10.0} °C"
                             }
                         }
-                    } catch (_: Throwable) {}
+                    } catch (e: Throwable) {
+                        Log.e("MediumWidgetProvider", "Error reading battery intent broadcast", e)
+                    }
                 }
 
                 val displayLevel = if (level != -1) "$level%" else "--%"
@@ -61,7 +64,9 @@ class MediumWidgetProvider : HomeWidgetProvider() {
                 views.setTextViewText(R.id.tv_medium_status, displayStatus)
                 views.setTextViewText(R.id.tv_medium_temp, "Temp: $displayTemp")
                 appWidgetManager.updateAppWidget(appWidgetId, views)
-            } catch (_: Throwable) {}
+            } catch (e: Throwable) {
+                Log.e("MediumWidgetProvider", "Error updating MediumWidgetProvider", e)
+            }
         }
     }
 }

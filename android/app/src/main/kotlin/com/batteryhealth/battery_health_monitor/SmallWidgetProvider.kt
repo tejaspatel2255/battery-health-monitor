@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
+import android.util.Log
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetProvider
 
@@ -41,7 +42,9 @@ class SmallWidgetProvider : HomeWidgetProvider() {
                                 temp = "${rawTemp / 10.0} °C"
                             }
                         }
-                    } catch (_: Throwable) {}
+                    } catch (e: Throwable) {
+                        Log.e("SmallWidgetProvider", "Error reading battery intent broadcast", e)
+                    }
                 }
 
                 val displayLevel = if (level != -1) "$level%" else "--%"
@@ -50,7 +53,9 @@ class SmallWidgetProvider : HomeWidgetProvider() {
                 views.setTextViewText(R.id.tv_battery_percentage, displayLevel)
                 views.setTextViewText(R.id.tv_battery_temp, displayTemp)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
-            } catch (_: Throwable) {}
+            } catch (e: Throwable) {
+                Log.e("SmallWidgetProvider", "Error updating SmallWidgetProvider", e)
+            }
         }
     }
 }
