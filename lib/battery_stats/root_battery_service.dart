@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
@@ -33,6 +34,9 @@ class RootBatteryService {
   static const String _rootGrantedKey = 'is_root_granted';
 
   Future<bool> isRootAvailable() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
     try {
       final bool? available =
           await _channel.invokeMethod('checkRootAvailability');
@@ -53,6 +57,13 @@ class RootBatteryService {
   }
 
   Future<RootBatteryInfo> fetchRootBatteryInfo() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return const RootBatteryInfo(
+        isRootAvailable: false,
+        isRootGranted: false,
+      );
+    }
+
     try {
       final Map<dynamic, dynamic>? result =
           await _channel.invokeMethod('getRootBatteryStats');

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'battery_model.dart';
 
@@ -10,6 +11,9 @@ class BatteryService {
   final Battery _battery = Battery();
 
   Future<Map<String, dynamic>> _fetchExtraStats() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return {};
+    }
     try {
       final Map<dynamic, dynamic>? result =
           await _channel.invokeMethod('getBatteryExtraStats');

@@ -1,13 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'battery_stats/background_service.dart';
 import 'ui/history_screen.dart';
 import 'ui/home_screen.dart';
 import 'ui/theme.dart';
+import 'ui/unsupported_platform_screen.dart';
 import 'ui/wear_estimator_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await BackgroundService.initialize();
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    await BackgroundService.initialize();
+  }
   runApp(const BatteryHealthApp());
 }
 
@@ -16,11 +20,15 @@ class BatteryHealthApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+
     return MaterialApp(
       title: 'Battery Health Monitor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const MainNavigationWrapper(),
+      home: isAndroid
+          ? const MainNavigationWrapper()
+          : const UnsupportedPlatformScreen(),
     );
   }
 }
