@@ -17,11 +17,14 @@
         android:textStyle="bold" />
 
     <TextView
+        android:id="@+id/tv_battery_temp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/tv_battery_percentage"
         android:layout_centerHorizontal="true"
-        android:text="BATTERY"
-        android:textColor="#8B949E"
-        android:textSize="9sp" />
+        android:layout_marginTop="2dp"
+        android:text="-- °C"
+        android:textColor="#FFAB40"
+        android:textSize="11sp"
+        android:textStyle="bold" />
 </RelativeLayout>
