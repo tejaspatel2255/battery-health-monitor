@@ -25,13 +25,22 @@ void callbackDispatcher() {
         temperature: info.temperature,
       );
 
-      if (info.temperature != null) {
-        await NotificationService.checkAndTriggerTemperatureWarning(info.temperature!);
-      }
-
+      // 1. Primary telemetry store (SQLite) - always executes first
       await BatteryDatabase.instance.insertLog(log);
 
-      // Check cached root status before invoking root shell from background isolate
+      // 2. Isolated Temperature Alert - notification errors will NOT break logging or widgets
+      if (info.temperature != null) {
+        try {
+          await NotificationService.checkAndTriggerTemperatureWarning(
+            info.temperature!,
+            isBackground: true,
+          );
+        } catch (e) {
+          debugPrint('Background notification warning failed silently: $e');
+        }
+      }
+
+      // 3. Isolated Root Check & Widget Sync
       final rootBatteryService = RootBatteryService();
       final isRootGranted = await rootBatteryService.isRootGrantedCached();
       final rootInfo = isRootGranted
