@@ -4,14 +4,20 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.Handler
+import android.os.Looper
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
     private val EXTRA_CHANNEL = "com.batteryhealth.monitor/battery_extra"
     private val ROOT_CHANNEL = "com.batteryhealth.monitor/root_battery"
+
+    private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -28,11 +34,20 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ROOT_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "checkRootAvailability" -> {
-                    result.success(isRootAvailable())
+                    executor.execute {
+                        val available = isRootAvailable()
+                        mainHandler.post {
+                            result.success(available)
+                        }
+                    }
                 }
                 "getRootBatteryStats" -> {
-                    val stats = getRootBatteryStats()
-                    result.success(stats)
+                    executor.execute {
+                        val stats = getRootBatteryStats()
+                        mainHandler.post {
+                            result.success(stats)
+                        }
+                    }
                 }
                 else -> {
                     result.notImplemented()
