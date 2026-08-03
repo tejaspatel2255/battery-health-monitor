@@ -26,7 +26,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Home Widget 1x1 Small Receiver -->
+        <!-- Home Widget 1x1 Small Receiver (Combined Percentage + Temp) -->
         <receiver
             android:name=".SmallWidgetProvider"
             android:exported="true"
@@ -38,6 +38,34 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_small_1x1_info" />
+        </receiver>
+
+        <!-- Home Widget 1x1 Battery Only Receiver (Percentage Only) -->
+        <receiver
+            android:name=".BatteryOnlyWidgetProvider"
+            android:exported="true"
+            android:label="Battery Only (1x1)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_battery_only_1x1_info" />
+        </receiver>
+
+        <!-- Home Widget 1x1 Temperature Only Receiver (Temp Only) -->
+        <receiver
+            android:name=".TempOnlyWidgetProvider"
+            android:exported="true"
+            android:label="Temperature Only (1x1)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_temp_only_1x1_info" />
         </receiver>
 
         <!-- Home Widget 2x1 Medium Receiver -->
