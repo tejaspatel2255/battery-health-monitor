@@ -86,16 +86,28 @@ class MainActivity : FlutterActivity() {
         stats["isRootAvailable"] = true
 
         try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "cat /sys/class/power_supply/battery/charge_full /sys/class/power_supply/battery/charge_full_design /sys/class/power_supply/battery/cycle_count"))
+            val cmd = "echo CF:\$(cat /sys/class/power_supply/battery/charge_full 2>/dev/null); echo CFD:\$(cat /sys/class/power_supply/battery/charge_full_design 2>/dev/null); echo CC:\$(cat /sys/class/power_supply/battery/cycle_count 2>/dev/null)"
+            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
             val exitCode = process.waitFor()
 
             if (exitCode == 0) {
                 stats["isRootGranted"] = true
                 val output = process.inputStream.bufferedReader().readLines()
 
-                val chargeFullRaw = output.getOrNull(0)?.trim()?.toLongOrNull()
-                val chargeFullDesignRaw = output.getOrNull(1)?.trim()?.toLongOrNull()
-                val cycleCountRaw = output.getOrNull(2)?.trim()?.toIntOrNull()
+                var chargeFullRaw: Long? = null
+                var chargeFullDesignRaw: Long? = null
+                var cycleCountRaw: Int? = null
+
+                for (line in output) {
+                    val trimmed = line.trim()
+                    if (trimmed.startsWith("CF:")) {
+                        chargeFullRaw = trimmed.substringAfter("CF:").trim().toLongOrNull()
+                    } else if (trimmed.startsWith("CFD:")) {
+                        chargeFullDesignRaw = trimmed.substringAfter("CFD:").trim().toLongOrNull()
+                    } else if (trimmed.startsWith("CC:")) {
+                        cycleCountRaw = trimmed.substringAfter("CC:").trim().toIntOrNull()
+                    }
+                }
 
                 stats["chargeFull"] = chargeFullRaw
                 stats["chargeFullDesign"] = chargeFullDesignRaw
