@@ -17,8 +17,10 @@ A production-ready, privacy-focused Android battery health tracking, overheating
   - **Estimated Health (Non-Root)**: Pure Dart delta integration of background charge cycles over time without root requirements.
 - **Safe Background Root Execution 🛡️**: Caches superuser grant status in the foreground to prevent headless background isolates from triggering interactive SU permission dialogs.
 - **Background Telemetry Logging**: Idempotent periodic background telemetry using `WorkManager` into a local SQLite database (`sqflite`).
-- **4 Native Android Home Screen Widgets**:
-  - 1x1 Small Widget (Charge %, Temperature)
+- **6 Native Android Home Screen Widgets**:
+  - 1x1 Small Widget (Combined Charge % & Temperature)
+  - 1x1 Battery Only Widget (Charge % Only)
+  - 1x1 Temperature Only Widget (Temperature °C Only)
   - 2x1 Medium Widget (Charge %, Status, Temperature)
   - 4x2 Large Widget (Charge %, Health Source Badge, Cycle Count, Temperature)
   - Resizable Adaptive Widget (Responsive layout across 3 size breakpoints)
