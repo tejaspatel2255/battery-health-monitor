@@ -3,7 +3,7 @@
     android:id="@+id/widget_temp_only_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
+    android:background="#161B22"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="8dp">
