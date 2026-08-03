@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
@@ -5,6 +6,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static bool _isInitialized = false;
+  static bool _permissionGranted = true;
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
@@ -27,10 +29,18 @@ class NotificationService {
       importance: Importance.high,
     );
 
-    await _notificationsPlugin
+    final androidImplementation = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidChannel);
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation != null) {
+      await androidImplementation.createNotificationChannel(androidChannel);
+      final granted = await androidImplementation.requestNotificationsPermission();
+      _permissionGranted = granted ?? false;
+      if (!_permissionGranted) {
+        debugPrint('NotificationService: User denied notification permissions.');
+      }
+    }
 
     _isInitialized = true;
   }
@@ -38,6 +48,11 @@ class NotificationService {
   static Future<void> checkAndTriggerTemperatureWarning(double tempCelsius) async {
     if (tempCelsius >= 40.0) {
       await initialize();
+
+      if (!_permissionGranted) {
+        debugPrint('NotificationService: Skipping alert, notification permission denied.');
+        return;
+      }
 
       const androidDetails = AndroidNotificationDetails(
         'battery_temp_alerts',

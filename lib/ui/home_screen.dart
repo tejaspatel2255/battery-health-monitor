@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationService.initialize();
     _loadDashboardData();
 
     _subscription = _batteryService.batteryInfoStream.listen((info) {
